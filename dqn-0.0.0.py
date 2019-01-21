@@ -30,14 +30,10 @@ class ReplayMemory(object):
         return len(self.memory)
 
 
-#for _ in range(1000):
-print(env.observation_space)
-screen = env.render(mode='rgb_array')
-# From position 215 to 250, is the point board
-plt.imshow(screen[:215])
-plt.show()
-time.sleep(0.05)
-action = env.action_space.sample()
-observation, reward, done, info = env.step(action)
+for _ in range(1000):
+    screen = env.render()
+    time.sleep(0.05)
+    action = env.action_space.sample()
+    observation, reward, done, info = env.step(action)
 
 
