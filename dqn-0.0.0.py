@@ -1,6 +1,7 @@
 # Let's play randomly
 
 from collections import namedtuple
+from itertools import count
 import gym
 import time
 import matplotlib.pyplot as plt
@@ -14,6 +15,8 @@ import math
 
 env = gym.make("Centipede-v0")
 observation = env.reset()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Making replay memory structure
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
@@ -73,6 +76,7 @@ class DQN(nn.Module):
 
 
 #for _ in range(1000):
+"""
 print(env.observation_space)
 screen = env.render(mode='rgb_array')
 # From position 215 to 250, is the point board
@@ -83,36 +87,38 @@ plt.show()
 time.sleep(0.05)
 action = env.action_space.sample()
 observation, reward, done, info = env.step(action)
-
+"""
 
 # Getting the image of the game
 def get_screen():
     '''This function returns the process image for the network'''
-    screen = env.render(mode='rgb_array')
-    screen = torch.tensor(screen)
+    screen = env.render(mode='rgb_array').transpose((2, 0, 1))
+    screen = torch.tensor(screen, dtype=torch.float32)
     screen = screen[:215, :, :]
-    return screen
+    return screen.unsqueeze(0)
 
 
 # Setting action selection variables
-BATCH_SIZE = 128
-GAMMA = 0.999
+BATCH_SIZE = 128 # RMSprop
+GAMMA = 0.999 # Q-algorhtm
+# Greedy epsilon policy, with exponential decay
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
+# How frequent backup on the other neural net
 TARGET_UPDATE = 10
 
 
 # Setting networks for DQN and algorithm
 init_screen = get_screen()
-screen_height, screen_width, _ = init_screen.shape
+_, _, screen_height, screen_width = init_screen.shape
 
 policy_net = DQN(screen_height, screen_width).to(device)
 target_net = DQN(screen_height, screen_width).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
-optmizer = optim.RMSprop(policy_net.parameters)
+optimizer = optim.RMSprop(policy_net.parameters())
 memory = ReplayMemory(10000)
 
 steps_done = 0
@@ -127,37 +133,72 @@ def select_action(state):
         with torch.no_grad():
             return policy_net(state).max(1)[1].view(1, 1)
     else:
-        return torch.tensor([[random.randrange(2)]], device=device, dtype=torch.long)
+        # Select one of the actions
+        # randomly
+        return torch.tensor([[random.randrange(18)]], device=device, dtype=torch.long)
 
 
 def optimize_model():
     if len(memory) < BATCH_SIZE:    
         return
+    # Takes random samples from the memory
     transition = memory.sample(BATCH_SIZE)
 
+    # Takes all the random samples and put in a transition object
+    # Taking each element of transition as a tuple
     batch = Transition(*zip(*transition))
 
+    # Sees all the next_states and check if there are None. To see if 
+    # an state is a final state. 
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), device=device, dtype=torch.uint8)
     
+    # Same as the last just that if a next_state is None, it just delete it.
+    non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+
+    # Tensors containing a concatenation of each part of transition
+    # on the batch
+    state_batch = torch.cat(batch.state)
+    action_batch = torch.cat(batch.action)
+    reward_batch = torch.cat(batch.reward)
+
+    # policy_net(state_batch) => actions => actions.gather(1, action_batch)
+    state_action_values = policy_net(state_batch).gather(1, action_batch)
+
+    # Create a tensor full of zeros
+    next_state_values = torch.zeros(BATCH_SIZE, device=device)
+    # Fill this tensor with prediction of the target net
+    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
+
+    # Take this values to predict the expected rewards
+    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+
+    # Measure the loss
+    loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+
+    # Optimize
+    optimizer.zero_grad()
+    loss.backward()
+    for param in policy_net.parameters():
+        param.grad.data.clamp_(-1, 1)
+    optimizer.step()
 
 ## Training loop
 ## TODO: Change form of state
-num_episodes = 0
+num_episodes = 1
 for i_episode in range(num_episodes):
     env.reset()    
     screen = get_screen()
-    state = screen # Why?
-    for t in count():
-        # Select and perform an action
+    state = screen
+    for t in count():        
         action = select_action(state)
         _, reward, done, _ = env.step(action.item())
         reward = torch.tensor([reward], device=device)
 
         # Observe new state
-        last_screen = current_screen
-        current_screen = get_screen()
+        last_screen = screen
+        screen = get_screen()
         if not done:
-            next_state = current_screen - last_screen
+            next_state = screen
         else:
             next_state = None
 
@@ -170,9 +211,9 @@ for i_episode in range(num_episodes):
         # Perform one step of the optimization (on the target network)
         optimize_model()
         if done:
-            episode_durations.append(t + 1)
             break
 
+        # Load the changes from the target network to the policy network
         if i_episode % TARGET_UPDATE == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
