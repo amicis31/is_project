@@ -129,7 +129,8 @@ if os.path.isfile(SAVE_FILE_NAME):
     policy_net.load_state_dict(model_info['policynet_state'])
     target_net.load_state_dict(policy_net.state_dict())
     target_net.train()
-    optimizer = optim.RMSprop(model_info['optimizer_state'])
+    optimizer = optim.RMSprop(policy_net.parameters())
+    optimizer.load_state_dict(model_info['optimizer_state'])
     memory = model_info['replaymemory']
     steps_done = model_info['steps_done']
 else:
