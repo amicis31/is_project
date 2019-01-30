@@ -12,11 +12,14 @@ import torch.optim as optim
 import torchvision.transforms as T
 import random
 import math
+import os
 
 env = gym.make("Centipede-v0")
 observation = env.reset()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+SAVE_FILE_NAME = 'dqn-model'
 
 # Making replay memory structure
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
@@ -113,15 +116,29 @@ TARGET_UPDATE = 10
 init_screen = get_screen()
 _, _, screen_height, screen_width = init_screen.shape
 
+# TODO: Load the model in case that it exists
+# Otherwise create the model
+# Check that the file exists
+steps_done = 0
 policy_net = DQN(screen_height, screen_width).to(device)
 target_net = DQN(screen_height, screen_width).to(device)
-target_net.load_state_dict(policy_net.state_dict())
-target_net.eval()
 
-optimizer = optim.RMSprop(policy_net.parameters())
-memory = ReplayMemory(10000)
+if os.path.isfile(SAVE_FILE_NAME):
+    # Load the model
+    model_info = torch.load(SAVE_FILE_NAME)
+    policy_net.load_state_dict(model_info['policynet_state'])
+    target_net.load_state_dict(policy_net.state_dict())
+    target_net.train()
+    optimizer = optim.RMSprop(model_info['optimizer_state'])
+    memory = model_info['replaymemory']
+    steps_done = model_info['steps_done']
+else:
+    target_net.load_state_dict(policy_net.state_dict())
+    target_net.eval()
+    optimizer = optim.RMSprop(policy_net.parameters())
+    memory = ReplayMemory(10000)
 
-steps_done = 0
+    
 
 def select_action(state):
     global steps_done
@@ -183,7 +200,6 @@ def optimize_model():
     optimizer.step()
 
 ## Training loop
-## TODO: Change form of state
 num_episodes = 1
 for i_episode in range(num_episodes):
     env.reset()    
@@ -216,5 +232,13 @@ for i_episode in range(num_episodes):
         # Load the changes from the target network to the policy network
         if i_episode % TARGET_UPDATE == 0:
             target_net.load_state_dict(policy_net.state_dict())
+            # TODO: Save the model
+            model_info = {
+                'policynet_state': policy_net.state_dict(),
+                'optimizer_state': optimizer.state_dict(),
+                'replaymemory': memory,
+                'steps_done': steps_done
+            }
+            torch.save(model_info, SAVE_FILE_NAME)
 
     print('Complete')
