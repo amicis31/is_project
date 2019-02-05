@@ -15,6 +15,8 @@ import math
 import os
 
 
+env = gym.make("Centipede-v0")
+observation = env.reset()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
