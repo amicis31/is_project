@@ -14,8 +14,7 @@ import random
 import math
 import os
 
-env = gym.make("Centipede-v0")
-observation = env.reset()
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -109,7 +108,7 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 # How frequent backup on the other neural net
-TARGET_UPDATE = 10
+TARGET_UPDATE = 1
 
 
 # Setting networks for DQN and algorithm
@@ -203,6 +202,8 @@ def optimize_model():
 ## Training loop
 num_episodes = 1
 for i_episode in range(num_episodes):
+    env = gym.make("Centipede-v0")
+    observation = env.reset()
     env.reset()    
     screen = get_screen()
     state = screen
