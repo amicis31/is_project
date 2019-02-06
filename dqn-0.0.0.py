@@ -85,7 +85,7 @@ if os.path.isfile(SAVE_FILE_NAME):
     net = DQN(screen_height, screen_width).to(device)
     
     # Load data from training
-    model_info = torch.load(SAVE_FILE_NAME)
+    model_info = torch.load(SAVE_FILE_NAME, map_location='cpu')
     net.load_state_dict(model_info['policynet_state'])    
     
     # Use the network to play
@@ -94,7 +94,6 @@ if os.path.isfile(SAVE_FILE_NAME):
         env.render()
         time.sleep(0.05)
         action = net(screen).max(1)[1].view(1, 1)
-        print(action.size())
         observation, reward, done, info = env.step(action)
 
 
