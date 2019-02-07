@@ -224,14 +224,14 @@ def optimize_model():
 
 ## Training loop
 
-num_episodes = 1
+num_episodes = 100
 for i_episode in range(num_episodes):
     env = gym.make("Centipede-v0")
     observation = env.reset()
     env.reset()    
     screen = get_screen()
     state = screen
-    for t in count():        
+    for t in 200:        
         action = select_action(state)
         _, reward, done, _ = env.step(action.item())
         reward = torch.tensor([reward], device=device)
