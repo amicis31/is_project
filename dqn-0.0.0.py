@@ -81,7 +81,7 @@ def get_screen():
     screen = screen[:215, :, :]
     mask = screen[:, :, :] > 0
     screen[mask] = 255
-    return resize(screen)unsqueeze(0).to(device)
+    return resize(screen).unsqueeze(0).to(device)
 
 # check if model exists
 if os.path.isfile(SAVE_FILE_NAME):
