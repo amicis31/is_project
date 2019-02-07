@@ -252,7 +252,6 @@ for i_episode in range(num_episodes):
 
         # Perform one step of the optimization (on the target network)
         optimize_model()
-        print(t)
         if done:
             break
 
