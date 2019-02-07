@@ -13,6 +13,7 @@ import torchvision.transforms as T
 import random
 import math
 import os
+import numpy as np
 
 
 env = gym.make("Centipede-v0")
@@ -78,28 +79,42 @@ class DQN(nn.Module):
 
 
 
-
-#for _ in range(1000):
 """
-print(env.observation_space)
-screen = env.render(mode='rgb_array')
+for _ in range(1002):
+    #print(env.observation_space)
+    screen = env.render(mode='rgb_array')
 # From position 215 to 250, is the point board
-screen = torch.tensor(screen)
-screen = screen[:215, :, :]
-plt.imshow(screen)
-plt.show()
-time.sleep(0.05)
-action = env.action_space.sample()
-observation, reward, done, info = env.step(action)
+    screen = torch.tensor(screen)
+    screen = screen[:215, :, :]
+    action = env.action_space.sample()
+    observation, reward, done, info = env.step(action)
+
+
+for _ in range(10):   
+    mask = screen[:, :, :] > 0 
+    screen[mask] = 255
+    plt.imshow(screen)
+    plt.show()
+    action = env.action_space.sample()
+    observation, reward, done, info = env.step(action)
+    screen = env.render(mode='rgb_array')
+    print(screen.shape)
+
 """
+
 
 # Getting the image of the game
+# Process the image only two three types of color
+
 def get_screen():
     '''This function returns the process image for the network'''
     screen = env.render(mode='rgb_array').transpose((2, 0, 1))
     screen = torch.tensor(screen, dtype=torch.float32)
     screen = screen[:215, :, :]
+    mask = screen[:, :, :] > 0
+    screen[mask] = 255
     return screen.unsqueeze(0).to(device)
+
 
 
 # Setting action selection variables
@@ -202,6 +217,7 @@ def optimize_model():
     optimizer.step()
 
 ## Training loop
+
 num_episodes = 1
 for i_episode in range(num_episodes):
     env = gym.make("Centipede-v0")
