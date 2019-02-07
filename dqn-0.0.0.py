@@ -106,6 +106,10 @@ for _ in range(10):
 # Getting the image of the game
 # Process the image only two three types of color
 
+resize = T.Compose([T.ToPILImage(),
+                    T.Resize(40, interpolation=Image.CUBIC),
+                    T.ToTensor()])
+
 def get_screen():
     '''This function returns the process image for the network'''
     screen = env.render(mode='rgb_array').transpose((2, 0, 1))
@@ -113,7 +117,7 @@ def get_screen():
     screen = screen[:215, :, :]
     mask = screen[:, :, :] > 0
     screen[mask] = 255
-    return screen.unsqueeze(0).to(device)
+    return resize(screen.unsqueeze(0).to(device))
 
 
 
