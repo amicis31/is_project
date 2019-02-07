@@ -231,7 +231,7 @@ for i_episode in range(num_episodes):
     env.reset()    
     screen = get_screen()
     state = screen
-    for t in 200:        
+    for t in range(200):        
         action = select_action(state)
         _, reward, done, _ = env.step(action.item())
         reward = torch.tensor([reward], device=device)
