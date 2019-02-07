@@ -267,4 +267,4 @@ for i_episode in range(num_episodes):
         }
         torch.save(model_info, SAVE_FILE_NAME)
 
-    print('Complete ', t)
+    print('Complete ', i_episode)
