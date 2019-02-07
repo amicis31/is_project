@@ -114,11 +114,12 @@ resize = T.Compose([T.ToPILImage(),
 def get_screen():
     '''This function returns the process image for the network'''
     screen = env.render(mode='rgb_array').transpose((2, 0, 1))
-    screen = torch.tensor(screen, dtype=torch.float32)
+    #screen = torch.tensor(screen, dtype=torch.float32)
     screen = screen[:215, :, :]
     mask = screen[:, :, :] > 0
     screen[mask] = 255
-    return resize(screen.unsqueeze(0).to(device))
+    screen = torch.tensor(screen, dtype=torch.float32)
+    return resize(screen).unsqueeze(0).to(device)
 
 
 
@@ -251,6 +252,7 @@ for i_episode in range(num_episodes):
 
         # Perform one step of the optimization (on the target network)
         optimize_model()
+        print(t)
         if done:
             break
 
