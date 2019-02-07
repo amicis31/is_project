@@ -14,6 +14,7 @@ import random
 import math
 import os
 import numpy as np
+from PIL import Image
 
 
 env = gym.make("Centipede-v0")
