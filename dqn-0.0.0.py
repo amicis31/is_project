@@ -9,6 +9,8 @@ from torch import nn
 import random
 import torch.nn.functional as F
 import os
+from PIL import Image
+import torchvision.transforms as T
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -68,6 +70,10 @@ class DQN(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         return self.head(x.view(x.size(0), -1))
 
+resize = T.Compose([T.ToPILImage(),
+                    T.Resize(40, interpolation=Image.CUBIC),
+                    T.ToTensor()])
+
 def get_screen():
     '''This function returns the process image for the network'''
     screen = env.render(mode='rgb_array').transpose((2, 0, 1))
@@ -75,7 +81,7 @@ def get_screen():
     screen = screen[:215, :, :]
     mask = screen[:, :, :] > 0
     screen[mask] = 255
-    return screen.unsqueeze(0).to(device)
+    return resize(screen.unsqueeze(0).to(device))
 
 # check if model exists
 if os.path.isfile(SAVE_FILE_NAME):
