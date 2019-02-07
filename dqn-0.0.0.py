@@ -256,15 +256,15 @@ for i_episode in range(num_episodes):
             break
 
         # Load the changes from the target network to the policy network
-        if i_episode % TARGET_UPDATE == 0:
-            target_net.load_state_dict(policy_net.state_dict())
-            # TODO: Save the model
-            model_info = {
-                'policynet_state': policy_net.state_dict(),
-                'optimizer_state': optimizer.state_dict(),
-                'replaymemory': memory,
-                'steps_done': steps_done
-            }
-            torch.save(model_info, SAVE_FILE_NAME)
+    if i_episode % TARGET_UPDATE == 0:
+        target_net.load_state_dict(policy_net.state_dict())
+        # TODO: Save the model
+        model_info = {
+            'policynet_state': policy_net.state_dict(),
+            'optimizer_state': optimizer.state_dict(),
+            'replaymemory': memory,
+            'steps_done': steps_done
+        }
+        torch.save(model_info, SAVE_FILE_NAME)
 
     print('Complete')
