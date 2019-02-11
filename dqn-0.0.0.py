@@ -97,7 +97,8 @@ if os.path.isfile(SAVE_FILE_NAME):
     net.load_state_dict(model_info['policynet_state'])    
     
     # Use the network to play
-    for _ in range(1000):        
+    done = False
+    while not done:        
         screen = get_screen()
         env.render()
         time.sleep(0.05)
